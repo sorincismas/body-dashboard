@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,6 +53,31 @@
         .modal-form button { background: linear-gradient(45deg, var(--primary-orange), #FFA500); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 600; border-radius: 12px; cursor: pointer; }
         .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--secondary-green); color: white; padding: 16px 24px; border-radius: 12px; z-index: 1002; transition: bottom 0.5s ease; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .toast.show { bottom: 30px; }
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .chart-button {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chart-button:hover {
+            background: var(--light-bg);
+            color: var(--text-primary);
+        }
+
+        .chart-container {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -78,14 +104,29 @@
             </div>
             <div class="card" style="grid-column: 1 / -1;">
                 <h2>Progres Greutate (kg)</h2>
+                <div class="chart-controls">
+                    <button class="chart-button" data-chart="weight" data-action="zoomIn">+</button>
+                    <button class="chart-button" data-chart="weight" data-action="zoomOut">-</button>
+                    <button class="chart-button" data-chart="weight" data-action="reset">Reset</button>
+                </div>
                 <div class="chart-container"><canvas id="weightChart"></canvas></div>
             </div>
             <div class="card" style="grid-column: 1 / -1;">
                 <h2>Progres IMC</h2>
+                <div class="chart-controls">
+                    <button class="chart-button" data-chart="bmi" data-action="zoomIn">+</button>
+                    <button class="chart-button" data-chart="bmi" data-action="zoomOut">-</button>
+                    <button class="chart-button" data-chart="bmi" data-action="reset">Reset</button>
+                </div>
                 <div class="chart-container"><canvas id="bmiChart"></canvas></div>
             </div>
             <div class="card" style="grid-column: 1 / -1;">
                 <h2>Progres Măsurători (cm)</h2>
+                <div class="chart-controls">
+                    <button class="chart-button" data-chart="measurements" data-action="zoomIn">+</button>
+                    <button class="chart-button" data-chart="measurements" data-action="zoomOut">-</button>
+                    <button class="chart-button" data-chart="measurements" data-action="reset">Reset</button>
+                </div>
                 <div class="chart-container"><canvas id="measurementsChart"></canvas></div>
             </div>
         </div>
@@ -241,57 +282,86 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('target-weight').textContent = `${ideal_weight_low}-${ideal_weight_high} kg`;
     }
 
+    function setupChartControls() {
+        document.querySelectorAll('.chart-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const chartType = button.dataset.chart;
+                const action = button.dataset.action;
+                let chart;
+
+                switch(chartType) {
+                    case 'weight':
+                        chart = weightChart;
+                        break;
+                    case 'bmi':
+                        chart = bmiChart;
+                        break;
+                    case 'measurements':
+                        chart = measurementsChart;
+                        break;
+                }
+
+                if (!chart) return;
+
+                switch(action) {
+                    case 'zoomIn':
+                        chart.zoom(1.1);
+                        break;
+                    case 'zoomOut':
+                        chart.zoom(0.9);
+                        break;
+                    case 'reset':
+                        chart.resetZoom();
+                        break;
+                }
+            });
+        });
+    }
+
     function renderCharts(data) {
         // Calculăm data de început pentru ultima lună
         const now = new Date();
         const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
 
         const chartOptions = (annotations) => ({
-            responsive: true, 
+            responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: { 
-                    type: 'time', 
-                    time: { 
+                x: {
+                    type: 'time',
+                    time: {
                         unit: 'day',
-                        displayFormats: { 
-                            day: 'dd MMM' 
+                        displayFormats: {
+                            day: 'dd MMM'
                         }
-                    }, 
-                    ticks: { 
-                        color: 'var(--text-secondary)' 
-                    }, 
-                    grid: { 
-                        color: 'var(--border-color)' 
                     },
-                    // Setăm zoom-ul implicit pe ultima lună
-                    min: oneMonthAgo,
-                    max: now
+                    ticks: {
+                        color: 'var(--text-secondary)'
+                    },
+                    grid: {
+                        color: 'var(--border-color)'
+                    }
                 },
-                y: { 
-                    beginAtZero: false, 
-                    ticks: { 
-                        color: 'var(--text-secondary)' 
-                    }, 
-                    grid: { 
-                        color: 'var(--border-color)' 
-                    } 
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        color: 'var(--text-secondary)'
+                    },
+                    grid: {
+                        color: 'var(--border-color)'
+                    }
                 }
             },
-            plugins: { 
-                legend: { 
-                    labels: { 
-                        color: 'var(--text-secondary)', 
-                        usePointStyle: true, 
-                        pointStyle: 'circle' 
-                    } 
-                }, 
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'var(--text-secondary)',
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
                 annotation: { annotations },
                 zoom: {
-                    pan: {
-                        enabled: true,
-                        mode: 'x'
-                    },
                     zoom: {
                         wheel: {
                             enabled: true
@@ -299,7 +369,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         pinch: {
                             enabled: true
                         },
-                        mode: 'x'
+                        mode: 'xy'
+                    },
+                    pan: {
+                        enabled: true,
+                        mode: 'xy'
                     }
                 }
             }
@@ -388,6 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             options: chartOptions({})  // Am eliminat linia de risc
         });
+
+        setupChartControls();
     }
 
     function showToast(message, isError = false) {
