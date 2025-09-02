@@ -3,72 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Body Dashboard</title>
-    <!-- External Libraries -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js" type="module"></script>
+    <title>Body Dashboard - Sorin</title>
+    <!-- Librării JavaScript: Firebase, Chart.js, Adaptor de date și Plugin-ul de Adnotări (NOU!) -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
     
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Application CSS -->
-    <link rel="stylesheet" href="css/variables.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root {
+            --primary-orange: #FF7A00;
+            --secondary-green: #34C759;
+            --danger-red: #FF3B30;
+            --light-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+            --font-family: 'Inter', sans-serif;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; font-family: var(--font-family); background-color: var(--light-bg); color: var(--text-primary); }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { margin-bottom: 24px; }
+        header h1 { font-size: 32px; font-weight: 700; margin: 0; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .card { background-color: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 4px_12px rgba(0,0,0,0.05); }
+        .card h2 { font-size: 20px; margin: 0 0 20px 0; font-weight: 600; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; }
+        .stat h3 { margin: 0; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+        .stat p { margin: 4px 0 8px; font-size: 28px; font-weight: 600; background: linear-gradient(45deg, var(--primary-orange), #FFB800); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat small { color: var(--text-secondary); font-size: 12px; }
+        .chart-container { margin-top: 16px; height: 300px; } /* Înălțime fixă pentru consistență */
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(45deg, var(--primary-orange), #FFA500); color: white; border-radius: 50%; border: none; font-size: 36px; line-height: 60px; text-align: center; box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4); cursor: pointer; z-index: 1000; transition: transform 0.2s; }
+        .fab:hover { transform: scale(1.1); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: flex-end; z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: var(--card-bg); padding: 24px; border-radius: 24px 24px 0 0; width: 100%; max-width: 500px; transform: translateY(100%); transition: transform 0.3s ease-out; }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-content h2 { margin-top: 0; }
+        .modal-form { display: flex; flex-direction: column; gap: 16px; }
+        .modal-form input { background-color: var(--light-bg); border: 1px solid var(--border-color); color: var(--text-primary); padding: 14px; border-radius: 12px; font-size: 16px; }
+        .modal-form button { background: linear-gradient(45deg, var(--primary-orange), #FFA500); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 600; border-radius: 12px; cursor: pointer; }
+        .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--secondary-green); color: white; padding: 16px 24px; border-radius: 12px; z-index: 1002; transition: bottom 0.5s ease; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .toast.show { bottom: 30px; }
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
 
-    <!-- Application JavaScript -->
-    <script type="module" src="js/app.js"></script>
+        .chart-button {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chart-button:hover {
+            background: var(--light-bg);
+            color: var(--text-primary);
+        }
+
+        .chart-container {
+            position: relative;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header><h1>Dashboard Corporal</h1></header>
         <div class="dashboard-grid">
-            <!-- Current Metrics -->
             <div class="card">
-                <h2>Metrici Curente</h2>
+                <h2>Metrici Cheie</h2>
                 <div class="stats-grid">
-                    <div class="stat">
-                        <h3>Greutate</h3>
-                        <p id="currentWeight">-- kg</p>
-                        <small id="weightStatus">La țintă</small>
-                    </div>
-                    <div class="stat">
-                        <h3>IMC</h3>
-                        <p id="bmiValue">--</p>
-                        <small id="bmiCategory">Normal</small>
-                    </div>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-bar" id="progressBar"></div>
-                    <span id="progressValue">0%</span>
+                    <div class="stat"><h3>Greutate</h3><p id="stat-weight">-- kg</p><small>Țintă: <span id="target-weight">--</span></small></div>
+                    <div class="stat"><h3>IMC</h3><p id="stat-bmi">--</p><small>Țintă: 18.5-24.9</small></div>
+                    <div class="stat"><h3>Talie</h3><p id="stat-waist">-- cm</p><small>Țintă: < 94 cm</small></div>
+                    <div class="stat"><h3>WHtR</h3><p id="stat-whtr">--</p><small>Țintă: < 0.5</small></div>
+                    <div class="stat"><h3>WHR</h3><p id="stat-whr">--</p><small>Țintă: < 0.90</small></div>
+                    <div class="stat"><h3>Șold</h3><p id="stat-hips">-- cm</p><small>Țintă: 98-102 cm</small></div>
                 </div>
             </div>
-
-            <!-- Latest Measurements -->
             <div class="card">
-                <h2>Măsurători</h2>
+                <h2>Estimări Metabolice</h2>
                 <div class="stats-grid">
-                    <div class="stat">
-                        <h3>Talie</h3>
-                        <p id="waistMeasurement">-- cm</p>
-                        <small>Circumferință</small>
-                    </div>
-                    <div class="stat">
-                        <h3>Bust</h3>
-                        <p id="chestMeasurement">-- cm</p>
-                        <small>Circumferință</small>
-                    </div>
-                    <div class="stat">
-                        <h3>Șold</h3>
-                        <p id="hipsMeasurement">-- cm</p>
-                        <small>Circumferință</small>
-                    </div>
+                    <div class="stat"><h3>BMR</h3><p id="stat-bmr">-- kcal</p><small>Energie în repaus</small></div>
+                    <div class="stat"><h3>TDEE</h3><p id="stat-tdee">-- kcal</p><small>Mentenanță calorică</small></div>
                 </div>
             </div>
             <div class="card" style="grid-column: 1 / -1;">
@@ -100,27 +131,26 @@
             </div>
         </div>
     </div>
-
-    <!-- Add Entry Button and Modal -->
-    <button class="fab" id="metricsForm">+</button>
+    
+    <button class="fab" id="add-entry-btn">+</button>
     <div class="modal-overlay" id="entry-modal">
         <div class="modal-content">
             <h2>Înregistrare Nouă</h2>
-            <form id="metricsForm" class="modal-form">
-                <input type="date" name="date" required>
-                <input type="number" step="0.1" name="weight" placeholder="Greutate (kg)" required>
-                <input type="number" name="waist" placeholder="Talie (cm)" required>
-                <input type="number" name="chest" placeholder="Bust (cm)" required>
-                <input type="number" name="hips" placeholder="Șold (cm)" required>
-                <button type="submit">Salvează</button>
+            <form id="entry-form" class="modal-form">
+                <input type="date" id="date" required>
+                <input type="number" step="0.1" id="weight" placeholder="Greutate (kg)">
+                <input type="number" step="0.1" id="shoulders" placeholder="Umeri (cm)">
+                <input type="number" step="0.1" id="chest" placeholder="Bust (cm)">
+                <input type="number" step="0.1" id="waist" placeholder="Talie (cm)">
+                <input type="number" step="0.1" id="hips" placeholder="Șold (cm)">
+                <input type="number" id="kcal" placeholder="Kcal arse (Apple Watch)">
+                <button type="submit">Salvează Înregistrarea</button>
             </form>
         </div>
     </div>
+    <div class="toast" id="toast-notification"></div>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">Success!</div>
-</body>
-</html>
+<script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURARE PERSONALĂ ---
     const USER_CONFIG = {
