@@ -2,348 +2,275 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Body Dashboard - Sorin</title>
-    <!-- MODIFICAT: Adăugăm SDK-ul Firebase/Firestore -->
+    <!-- Librării: Firebase & Chart.js -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS-ul rămâne identic cu cel de la versiunea Supabase */ 
         :root {
-            --primary: #0666EB;
-            --secondary: #00D6B5;
-            --dark-bg: #F6F7F9;
-            --card-bg: #FFFFFF;
-            --text-primary: #333333;
-            --text-secondary: #71778D;
-            --border-color: #E6E9F0;
-            --font-heading: 'Inter', sans-serif;
-            --font-body: 'Inter', sans-serif;
+            --primary: #007AFF;
+            --secondary: #34C759;
+            --dark-bg: #000000;
+            --card-bg: #1C1C1E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #8E8E93;
+            --border-color: #3A3A3C;
+            --font-family: 'Inter', sans-serif;
         }
-
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             margin: 0;
-            font-family: var(--font-body);
+            font-family: var(--font-family);
             background-color: var(--dark-bg);
             color: var(--text-primary);
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            text-align: left;
-            margin-bottom: 30px;
-        }
-
-        header h1 {
-            font-family: var(--font-heading);
-            color: var(--text-primary);
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        header p {
-            color: var(--text-secondary);
-            margin: 5px 0;
-        }
-
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 16px;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            border: none;
-        }
-
-        .card h2 {
-            font-family: var(--font-heading);
-            font-size: 18px;
-            margin: 0 0 20px 0;
-            color: var(--text-primary);
-            border: none;
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        form label {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        form input {
-            background-color: var(--dark-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 12px;
-            border-radius: 12px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        form input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-
-        form button {
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { margin-bottom: 24px; }
+        header h1 { font-size: 32px; font-weight: 700; margin: 0; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .card { background-color: var(--card-bg); border-radius: 18px; padding: 20px; }
+        .card h2 { font-size: 20px; margin: 0 0 20px 0; font-weight: 600; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; }
+        .stat h3 { margin: 0; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+        .stat p { margin: 4px 0 0; font-size: 28px; font-weight: 600; color: var(--primary); }
+        .chart-container { margin-top: 16px; }
+        
+        /* Buton Plutitor (FAB) */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
             background-color: var(--primary);
             color: white;
+            border-radius: 50%;
             border: none;
-            padding: 14px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 12px;
+            font-size: 36px;
+            line-height: 60px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
             cursor: pointer;
-            transition: background-color 0.3s;
+            z-index: 1000;
         }
-
-        form button:hover {
-            background-color: #0550BC;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        .stat {
-            background-color: var(--dark-bg);
-            padding: 16px;
-            border-radius: 12px;
-        }
-
-        .stat h3 {
-            margin: 0;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: normal;
-        }
-
-        .stat p {
-            margin: 8px 0 0;
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .chart-container {
-            margin-top: 20px;
-            padding: 16px;
-            background: var(--dark-bg);
-            border-radius: 12px;
-        }
+        
+        /* Modal Form */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1001; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--card-bg); padding: 24px; border-radius: 18px; width: 90%; max-width: 400px; }
+        .modal-content h2 { margin-top: 0; }
+        .modal-form { display: flex; flex-direction: column; gap: 16px; }
+        .modal-form input { background-color: #2C2C2E; border: 1px solid var(--border-color); color: var(--text-primary); padding: 14px; border-radius: 10px; font-size: 16px; }
+        .modal-form button { background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 600; border-radius: 10px; cursor: pointer; }
+        
+        /* Toast Notification */
+        .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--secondary); color: white; padding: 16px 24px; border-radius: 10px; z-index: 1002; transition: bottom 0.5s ease; font-weight: 500; }
+        .toast.show { bottom: 30px; }
     </style>
 </head>
 <body>
-    <!-- HTML-ul rămâne identic -->
     <div class="container">
-        <header><h1>Body Dashboard</h1><p>Monitorizarea progresului către obiectivul meu.</p></header>
-        <div class="dashboard">
+        <header><h1>Dashboard Corporal</h1></header>
+        <div class="dashboard-grid">
             <div class="card">
-                <h2>Status Curent</h2>
+                <h2>Metrici Cheie (Ultima Înregistrare)</h2>
                 <div class="stats-grid">
-                    <div class="stat"><h3>Greutate (kg)</h3><p id="stat-weight">--</p></div>
-                    <div class="stat"><h3>Masa Musc. (%)</h3><p id="stat-muscle">--</p></div>
-                    <div class="stat"><h3>Piept (cm)</h3><p id="stat-chest">--</p></div>
-                    <div class="stat"><h3>Coapse (cm)</h3><p id="stat-thigh">--</p></div>
-                </div>
-                <hr>
-                <div class="stats-grid">
+                    <div class="stat"><h3>Greutate</h3><p id="stat-weight">-- kg</p></div>
                     <div class="stat"><h3>IMC</h3><p id="stat-bmi">--</p></div>
-                    <div class="stat"><h3>Greutate Ideală</h3><p id="stat-ideal-weight">--</p></div>
-                    <div class="stat"><h3>Categorie IMC</h3><p id="stat-bmi-cat">--</p></div>
-                    <div class="stat"><h3>BMR (kcal/zi)</h3><p id="stat-bmr">--</p></div>
-                    <div class="stat"><h3>TDEE (kcal/zi)</h3><p id="stat-tdee">--</p></div>
+                    <div class="stat"><h3>Talie</h3><p id="stat-waist">-- cm</p></div>
+                    <div class="stat"><h3>Calorii</h3><p id="stat-kcal">--</p></div>
                 </div>
             </div>
-            <div class="card"><h2>Înregistrare Zilnică</h2><form id="daily-form"><input type="date" id="daily-date" required><input type="number" step="0.1" id="weight" placeholder="Greutate (kg)" required><input type="number" step="0.1" id="muscle" placeholder="Masa Musculară (%)"><input type="number" id="calories" placeholder="Calorii (kcal)"><button type="submit">Salvează</button></form></div>
-            <div class="card"><h2>Măsurători Corporale</h2><form id="measurements-form"><input type="date" id="measure-date" required><input type="number" step="0.1" id="chest" placeholder="Piept (cm)"><input type="number" step="0.1" id="shoulders" placeholder="Umeri (cm)"><input type="number" step="0.1" id="thigh" placeholder="Coapse (cm)"><input type="number" step="0.1" id="calf" placeholder="Gambe (cm)"><button type="submit">Salvează Măsurători</button></form></div>
-            <div class="card" style="grid-column: 1 / -1;"><h2>Progres Greutate</h2><div class="chart-container"><canvas id="weightChart"></canvas></div></div>
-            <div class="card" style="grid-column: 1 / -1;"><h2>Progres Măsurători</h2><div class="chart-container"><canvas id="measurementsChart"></canvas></div></div>
+            <div class="card">
+                <h2>Estimări Zilnice</h2>
+                <div class="stats-grid">
+                    <div class="stat"><h3>BMR</h3><p id="stat-bmr">-- kcal</p></div>
+                    <div class="stat"><h3>TDEE</h3><p id="stat-tdee">-- kcal</p></div>
+                    <div class="stat"><h3>Greutate Ideală</h3><p id="stat-ideal-weight">-- kg</p></div>
+                </div>
+            </div>
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Progres Greutate</h2>
+                <div class="chart-container"><canvas id="weightChart"></canvas></div>
+            </div>
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Progres Măsurători (cm)</h2>
+                <div class="chart-container"><canvas id="measurementsChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="fab" id="add-entry-btn">+</button>
+
+    <div class="modal-overlay" id="entry-modal">
+        <div class="modal-content">
+            <h2>Înregistrare Nouă</h2>
+            <form id="entry-form" class="modal-form">
+                <input type="date" id="date" required>
+                <input type="number" step="0.1" id="weight" placeholder="Greutate (kg)">
+                <input type="number" step="0.1" id="shoulders" placeholder="Umeri (cm)">
+                <input type="number" step="0.1" id="chest" placeholder="Bust (cm)">
+                <input type="number" step="0.1" id="waist" placeholder="Talie (cm)">
+                <input type="number" step="0.1" id="hips" placeholder="Șold (cm)">
+                <input type="number" id="kcal" placeholder="Kcal arse (Apple Watch)">
+                <button type="submit">Salvează Înregistrarea</button>
+            </form>
         </div>
     </div>
 
+    <div class="toast" id="toast-notification">Date salvate cu succes!</div>
+
 <script>
-    // --- CONFIGURARE FIREBASE ---
-    // !!! ÎNLOCUIEȘTE ACEST OBIECT CU CEL DIN CONSOLA TA FIREBASE !!!
-    
-   // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-    const firebaseConfig = {
-        apiKey: "AIzaSyDa2r9t3kWGUpoiuqRaaKvYpWlJ_V8-yMI",
-        authDomain: "body-dashboard-sorin.firebaseapp.com",
-        projectId: "body-dashboard-sorin",
-        storageBucket: "body-dashboard-sorin.firebasestorage.app",
-        messagingSenderId: "895437811384",
-        appId: "1:895437811384:web:6f735fd10b35bf448fce4d",
-        measurementId: "G-JYGMGKFQB8"
+    // --- CONFIGURARE PERSONALĂ ---
+    const USER_CONFIG = {
+        // ATENȚIE: Am corectat anul nașterii. Dacă te-ai născut în '85, la 8 Septembrie 2024 vei împlini 39.
+        // Pentru a împlini 40 de ani, anul nașterii ar fi 1984. Am pus 1984.
+        BIRTH_DATE: new Date('1984-09-08'),
+        HEIGHT_CM: 173,
+        GENDER: 'male',
+        ACTIVITY_FACTOR: 1.55 // 1.2=sedentar, 1.375=ușor activ, 1.55=moderat activ, 1.725=foarte activ
     };
 
-    // Inițializează Firebase și Firestore
+    // --- CONFIGURARE FIREBASE ---
+    // !!! ÎNLOCUIEȘTE ACEST OBIECT CU CEL DIN CONSOLA TA FIREBASE !!!
+    const firebaseConfig = {
+        apiKey: "AIza...",
+        authDomain: "...",
+        projectId: "...",
+        storageBucket: "...",
+        messagingSenderId: "...",
+        appId: "..."
+    };
+
+    // Inițializare Firebase & Firestore
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // --- Referințe DOM ---
-    const dailyForm = document.getElementById('daily-form');
-    const measurementsForm = document.getElementById('measurements-form');
-    document.getElementById('daily-date').valueAsDate = new Date();
-    document.getElementById('measure-date').valueAsDate = new Date();
+    // Referințe DOM
+    const entryModal = document.getElementById('entry-modal');
+    const entryForm = document.getElementById('entry-form');
+    document.getElementById('add-entry-btn').addEventListener('click', () => {
+        entryForm.reset();
+        document.getElementById('date').valueAsDate = new Date();
+        entryModal.classList.add('active');
+    });
+    entryModal.addEventListener('click', (e) => {
+        if (e.target === entryModal) entryModal.classList.remove('active');
+    });
+
     let weightChart, measurementsChart;
 
-    // --- Funcții Bază de Date (MODIFICATE PENTRU FIRESTORE) ---
-    async function logDailyEntry(e) {
+    // --- Logică Salvare Date ---
+    entryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const entry = {
-            date: document.getElementById('daily-date').value,
+            date: document.getElementById('date').value,
             weight_kg: parseFloat(document.getElementById('weight').value) || null,
-            muscle_mass_percent: parseFloat(document.getElementById('muscle').value) || null,
-            calories_kcal: parseInt(document.getElementById('calories').value) || null,
-        };
-        try {
-            await db.collection('daily_entries').add(entry);
-            alert('Date zilnice salvate!');
-            dailyForm.reset();
-            document.getElementById('daily-date').valueAsDate = new Date();
-            loadAllData();
-        } catch (error) {
-            alert('Eroare la salvare: ' + error.message);
-        }
-    }
-
-    async function logMeasurements(e) {
-        e.preventDefault();
-        const entry = {
-            date: document.getElementById('measure-date').value,
-            chest_cm: parseFloat(document.getElementById('chest').value) || null,
             shoulders_cm: parseFloat(document.getElementById('shoulders').value) || null,
-            thigh_cm: parseFloat(document.getElementById('thigh').value) || null,
-            calf_cm: parseFloat(document.getElementById('calf').value) || null,
+            chest_cm: parseFloat(document.getElementById('chest').value) || null,
+            waist_cm: parseFloat(document.getElementById('waist').value) || null,
+            hips_cm: parseFloat(document.getElementById('hips').value) || null,
+            kcal_burnt: parseInt(document.getElementById('kcal').value) || null,
         };
         try {
-            await db.collection('measurements').add(entry);
-            alert('Măsurători salvate!');
-            measurementsForm.reset();
-            document.getElementById('measure-date').valueAsDate = new Date();
+            await db.collection('checkins').add(entry);
+            entryModal.classList.remove('active');
+            showToast('Date salvate cu succes!');
             loadAllData();
         } catch (error) {
             alert('Eroare la salvare: ' + error.message);
         }
-    }
+    });
 
     async function loadAllData() {
-        try {
-            // Fetch daily entries
-            const dailySnapshot = await db.collection('daily_entries').orderBy('date').get();
-            const dailyData = dailySnapshot.docs.map(doc => doc.data());
-            
-            // Fetch measurements
-            const measureSnapshot = await db.collection('measurements').orderBy('date').get();
-            const measureData = measureSnapshot.docs.map(doc => doc.data());
-
-            updateDashboard(dailyData, measureData);
-            renderCharts(dailyData, measureData);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        }
+        const snapshot = await db.collection('checkins').orderBy('date').get();
+        const data = snapshot.docs.map(doc => doc.data());
+        updateDashboard(data);
+        renderCharts(data);
     }
-    
-    // --- Funcțiile de UI (updateDashboard, renderCharts) rămân identice ---
-    function updateDashboard(dailyData, measureData) { /* ... cod identic ca înainte ... */ }
-    function renderCharts(dailyData, measureData) { /* ... cod identic ca înainte ... */ }
-    
-    // Copiază aici funcțiile `updateDashboard` și `renderCharts` din versiunea anterioară
-    // (Le-am omis pentru a nu încărca răspunsul, dar ele trebuie să fie aici)
-    function updateDashboard(dailyData, measureData) {
-        // Date personale
-        const sex = 'male';
-        const birthDate = new Date('1985-09-08');
-        const height_cm = 173;
-        let weight_kg = 83; // default dacă nu există date
 
-        if (dailyData.length > 0) {
-            const lastDaily = dailyData[dailyData.length - 1];
-            weight_kg = lastDaily.weight_kg || weight_kg;
-            document.getElementById('stat-weight').textContent = lastDaily.weight_kg || '--';
-            document.getElementById('stat-muscle').textContent = lastDaily.muscle_mass_percent || '--';
-        } else {
-            document.getElementById('stat-weight').textContent = weight_kg;
-            document.getElementById('stat-muscle').textContent = '--';
-        }
-        if (measureData.length > 0) {
-            const lastMeasure = measureData[measureData.length - 1];
-            document.getElementById('stat-chest').textContent = lastMeasure.chest_cm || '--';
-            document.getElementById('stat-thigh').textContent = lastMeasure.thigh_cm || '--';
-        }
+    // --- Logică Dashboard & Calcule ---
+    function updateDashboard(data) {
+        if (data.length === 0) return;
+        const lastEntry = data[data.length - 1];
 
-        // Calcule automate
-        const height_m = height_cm / 100;
+        const height_m = USER_CONFIG.HEIGHT_CM / 100;
+        const weight_kg = lastEntry.weight_kg || 82; // Folosește ultima greutate sau default
+        const age = new Date().getFullYear() - USER_CONFIG.BIRTH_DATE.getFullYear();
+
+        // Calcule
         const bmi = (weight_kg / (height_m * height_m)).toFixed(1);
+        const ideal_weight = (50 + 0.9 * (USER_CONFIG.HEIGHT_CM - 152)).toFixed(1);
+        const bmr = Math.round(10 * weight_kg + 6.25 * USER_CONFIG.HEIGHT_CM - 5 * age + 5);
+        const tdee = Math.round(bmr * USER_CONFIG.ACTIVITY_FACTOR);
 
-        // Greutate ideală (Devine formula pentru bărbați)
-        const ideal_weight = (50 + 0.9 * (height_cm - 152)).toFixed(1);
-
-        // Categorie IMC
-        let bmi_cat = '';
-        if (bmi < 18.5) bmi_cat = 'Subponderal';
-        else if (bmi < 25) bmi_cat = 'Normal';
-        else if (bmi < 30) bmi_cat = 'Supraponderal';
-        else bmi_cat = 'Obezitate';
-
-        // Vârstă
-        const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        if (
-            today.getMonth() < birthDate.getMonth() ||
-            (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())
-        ) {
-            age--;
-        }
-
-        // BMR (Mifflin-St Jeor pentru bărbați)
-        // sport saptamanal => activitate moderată (factor 1.55)
-        const bmr = Math.round(10 * weight_kg + 6.25 * height_cm - 5 * age + 5);
-        const tdee = Math.round(bmr * 1.55);
-
+        // Afișare
+        document.getElementById('stat-weight').textContent = `${lastEntry.weight_kg || '--'} kg`;
         document.getElementById('stat-bmi').textContent = bmi;
-        document.getElementById('stat-ideal-weight').textContent = ideal_weight + ' kg';
-        document.getElementById('stat-bmi-cat').textContent = bmi_cat;
-        document.getElementById('stat-bmr').textContent = bmr;
-        document.getElementById('stat-tdee').textContent = tdee;
+        document.getElementById('stat-waist').textContent = `${lastEntry.waist_cm || '--'} cm`;
+        document.getElementById('stat-kcal').textContent = lastEntry.kcal_burnt || '--';
+        document.getElementById('stat-bmr').textContent = `${bmr} kcal`;
+        document.getElementById('stat-tdee').textContent = `${tdee} kcal`;
+        document.getElementById('stat-ideal-weight').textContent = `${ideal_weight} kg`;
     }
-    function renderCharts(dailyData, measureData) {
-        const chartOptions = { scales: { x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }, y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } } }, plugins: { legend: { labels: { color: 'white' } } } };
+
+    // --- Logică Grafice ---
+    function renderCharts(data) {
+        const chartOptions = (yLabel) => ({
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                x: { type: 'time', time: { unit: 'day' }, ticks: { color: var(--text-secondary) }, grid: { color: var(--border-color) } },
+                y: { beginAtZero: false, ticks: { color: var(--text-secondary) }, grid: { color: var(--border-color) }, title: { display: true, text: yLabel, color: var(--text-secondary) } }
+            },
+            plugins: { legend: { labels: { color: var(--text-secondary) } } }
+        });
+        
+        // Grafic Greutate
         if (weightChart) weightChart.destroy();
         const weightCtx = document.getElementById('weightChart').getContext('2d');
-        weightChart = new Chart(weightCtx, { type: 'line', data: { labels: dailyData.map(d => new Date(d.date).toLocaleDateString('ro-RO')), datasets: [ { label: 'Greutate (kg)', data: dailyData.map(d => d.weight_kg), borderColor: 'var(--orange)', tension: 0.1, fill: false }, { label: 'Masa Musculară (%)', data: dailyData.map(d => d.muscle_mass_percent), borderColor: '#4299E1', tension: 0.1, fill: false } ] }, options: chartOptions });
+        weightChart = new Chart(weightCtx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    { label: 'Greutate (kg)', data: data.map(d => ({x: new Date(d.date), y: d.weight_kg})).filter(d => d.y), borderColor: var(--primary), tension: 0.1, pointRadius: 4 },
+                ]
+            },
+            options: chartOptions('kg')
+        });
+        
+        // Grafic Măsurători
         if (measurementsChart) measurementsChart.destroy();
         const measureCtx = document.getElementById('measurementsChart').getContext('2d');
-        measurementsChart = new Chart(measureCtx, { type: 'line', data: { labels: measureData.map(d => new Date(d.date).toLocaleDateString('ro-RO')), datasets: [ { label: 'Piept (cm)', data: measureData.map(d => d.chest_cm), borderColor: '#F56565', tension: 0.1, fill: false }, { label: 'Coapse (cm)', data: measureData.map(d => d.thigh_cm), borderColor: '#48BB78', tension: 0.1, fill: false }, { label: 'Umeri (cm)', data: measureData.map(d => d.shoulders_cm), borderColor: '#ED8936', tension: 0.1, fill: false } ] }, options: chartOptions });
+        measurementsChart = new Chart(measureCtx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    { label: 'Talie (cm)', data: data.map(d => ({x: new Date(d.date), y: d.waist_cm})).filter(d => d.y), borderColor: '#FF9500', tension: 0.1 },
+                    { label: 'Bust (cm)', data: data.map(d => ({x: new Date(d.date), y: d.chest_cm})).filter(d => d.y), borderColor: '#FF2D55', tension: 0.1 },
+                    { label: 'Șold (cm)', data: data.map(d => ({x: new Date(d.date), y: d.hips_cm})).filter(d => d.y), borderColor: '#AF52DE', tension: 0.1 }
+                ]
+            },
+            options: chartOptions('cm')
+        });
     }
 
-    // --- Inițializare ---
-    dailyForm.addEventListener('submit', logDailyEntry);
-    measurementsForm.addEventListener('submit', logMeasurements);
+    function showToast(message) {
+        const toast = document.getElementById('toast-notification');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // Inițializare
     document.addEventListener('DOMContentLoaded', loadAllData);
 </script>
 </body>
