@@ -205,13 +205,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Logică Grafice ---
     function renderCharts(data) {
-        // Obținem culorile din CSS
         const style = getComputedStyle(document.documentElement);
         const textSecondary = style.getPropertyValue('--text-secondary');
         const borderColor = style.getPropertyValue('--border-color');
         const primaryOrange = style.getPropertyValue('--primary-orange');
 
-        const chartOptions = (yLabel) => ({
+        const chartOptions = (yLabel, targetLines = []) => ({
             responsive: true, 
             maintainAspectRatio: false,
             scales: {
@@ -243,9 +242,14 @@ document.addEventListener('DOMContentLoaded', () => {
             plugins: { 
                 legend: { 
                     labels: { 
-                        color: textSecondary 
+                        color: textSecondary,
+                        usePointStyle: true,    // Folosește puncte în loc de dreptunghiuri
+                        pointStyle: 'circle'     // Specifică stilul punct
                     } 
-                } 
+                },
+                annotation: {
+                    annotations: targetLines
+                }
             }
         });
         
@@ -254,15 +258,35 @@ document.addEventListener('DOMContentLoaded', () => {
         weightChart = new Chart(weightCtx, {
             type: 'line',
             data: {
-                datasets: [{ 
-                    label: 'Greutate', 
-                    data: data.map(d => ({x: d.date, y: d.weight_kg})).filter(d => d.y), 
-                    borderColor: primaryOrange, 
-                    backgroundColor: 'rgba(255, 122, 0, 0.1)', 
-                    tension: 0.2, 
-                    pointRadius: 4, 
-                    fill: true 
-                }]
+                datasets: [
+                    { 
+                        label: 'Greutate', 
+                        data: data.map(d => ({x: d.date, y: d.weight_kg})).filter(d => d.y), 
+                        borderColor: primaryOrange, 
+                        backgroundColor: 'rgba(255, 122, 0, 0.1)', 
+                        tension: 0.2, 
+                        pointRadius: 4, 
+                        fill: true 
+                    },
+                    {
+                        label: 'Țintă minimă',
+                        data: data.map(d => ({x: d.date, y: 70})),  // Greutate țintă minimă
+                        borderColor: '#34C759',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: 'Țintă maximă',
+                        data: data.map(d => ({x: d.date, y: 85})),  // Greutate țintă maximă
+                        borderColor: '#FF3B30',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
             },
             options: chartOptions('kg')
         });
@@ -273,9 +297,39 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Talie', data: data.map(d => ({x: d.date, y: d.waist_cm})).filter(d => d.y), borderColor: '#FF9500' },
-                    { label: 'Bust', data: data.map(d => ({x: d.date, y: d.chest_cm})).filter(d => d.y), borderColor: '#FF2D55' },
-                    { label: 'Șold', data: data.map(d => ({x: d.date, y: d.hips_cm})).filter(d => d.y), borderColor: '#AF52DE' }
+                    { 
+                        label: 'Talie', 
+                        data: data.map(d => ({x: d.date, y: d.waist_cm})).filter(d => d.y), 
+                        borderColor: '#FF9500',
+                        pointStyle: 'circle',
+                        tension: 0.2,
+                        pointRadius: 4
+                    },
+                    { 
+                        label: 'Bust', 
+                        data: data.map(d => ({x: d.date, y: d.chest_cm})).filter(d => d.y), 
+                        borderColor: '#FF2D55',
+                        pointStyle: 'circle',
+                        tension: 0.2,
+                        pointRadius: 4
+                    },
+                    { 
+                        label: 'Șold', 
+                        data: data.map(d => ({x: d.date, y: d.hips_cm})).filter(d => d.y), 
+                        borderColor: '#AF52DE',
+                        pointStyle: 'circle',
+                        tension: 0.2,
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'Țintă talie',
+                        data: data.map(d => ({x: d.date, y: 94})),  // Țintă talie
+                        borderColor: '#34C759',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }
                 ]
             },
             options: chartOptions('cm')
