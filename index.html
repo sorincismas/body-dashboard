@@ -12,25 +12,148 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* CSS-ul rămâne identic cu cel de la versiunea Supabase */
-        :root { --orange: #FF6B00; --dark-bg: #121212; --card-bg: #1E1E1E; --text-primary: #E0E0E0; --text-secondary: #BDBDBD; --border-color: #333; --font-heading: 'Poppins', sans-serif; --font-body: 'Roboto', sans-serif; }
-        body { margin: 0; font-family: var(--font-body); background-color: var(--dark-bg); color: var(--text-primary); }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header { text-align: center; margin-bottom: 40px; }
-        header h1 { font-family: var(--font-heading); color: var(--orange); font-size: 2.5rem; }
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background-color: var(--card-bg); border-radius: 8px; padding: 25px; border: 1px solid var(--border-color); }
-        .card h2 { font-family: var(--font-heading); margin-top: 0; border-bottom: 2px solid var(--orange); padding-bottom: 10px; }
-        form { display: flex; flex-direction: column; gap: 15px; }
-        form label { font-weight: 700; color: var(--text-secondary); }
-        form input { background-color: #2C2C2C; border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 4px; font-size: 1rem; }
-        form button { background-color: var(--orange); color: white; border: none; padding: 12px; font-size: 1rem; font-weight: bold; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
-        form button:hover { background-color: #e65c00; }
-        .chart-container { position: relative; width: 100%; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .stat h3 { margin: 0; color: var(--text-secondary); font-size: 0.9rem; }
-        .stat p { margin: 5px 0 0; font-size: 1.8rem; font-weight: 700; color: var(--orange); }
+        :root {
+            --primary: #0666EB;
+            --secondary: #00D6B5;
+            --dark-bg: #F6F7F9;
+            --card-bg: #FFFFFF;
+            --text-primary: #333333;
+            --text-secondary: #71778D;
+            --border-color: #E6E9F0;
+            --font-heading: 'Inter', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-body);
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: left;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-family: var(--font-heading);
+            color: var(--text-primary);
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            margin: 5px 0;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: none;
+        }
+
+        .card h2 {
+            font-family: var(--font-heading);
+            font-size: 18px;
+            margin: 0 0 20px 0;
+            color: var(--text-primary);
+            border: none;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        form label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        form input {
+            background-color: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        form input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        form button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        form button:hover {
+            background-color: #0550BC;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .stat {
+            background-color: var(--dark-bg);
+            padding: 16px;
+            border-radius: 12px;
+        }
+
+        .stat h3 {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .stat p {
+            margin: 8px 0 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--dark-bg);
+            border-radius: 12px;
+        }
     </style>
 </head>
 <body>
