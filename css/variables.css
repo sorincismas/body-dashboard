@@ -1,0 +1,11 @@
+:root {
+    --primary-orange: #FF7A00;
+    --secondary-green: #34C759;
+    --danger-red: #FF3B30;
+    --light-bg: #F9FAFB;
+    --card-bg: #FFFFFF;
+    --text-primary: #1F2937;
+    --text-secondary: #6B7280;
+    --border-color: #E5E7EB;
+    --font-family: 'Inter', sans-serif;
+}
