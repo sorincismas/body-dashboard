@@ -63,10 +63,36 @@
             <div class="card">
                 <h2>Metrici Cheie</h2>
                 <div class="stats-grid">
-                    <div class="stat"><h3>Greutate</h3><p id="stat-weight">-- kg</p><small>Țintă: <span id="target-weight">--</span></small></div>
-                    <div class="stat"><h3>IMC</h3><p id="stat-bmi">--</p><small>Țintă: 18.5-24.9</small></div>
-                    <div class="stat"><h3>Talie</h3><p id="stat-waist">-- cm</p><small>Țintă: < 94 cm</small></div>
-                    <div class="stat"><h3>Calorii Arse</h3><p id="stat-kcal">--</p><small>Țintă TDEE: <span id="target-tdee">--</span></small></div>
+                    <div class="stat">
+                        <h3>Greutate</h3>
+                        <p id="stat-weight">-- kg</p>
+                        <small>Țintă: <span id="target-weight">--</span></small>
+                    </div>
+                    <div class="stat">
+                        <h3>IMC</h3>
+                        <p id="stat-bmi">--</p>
+                        <small>Țintă: 18.5-24.9</small>
+                    </div>
+                    <div class="stat">
+                        <h3>Talie</h3>
+                        <p id="stat-waist">-- cm</p>
+                        <small>Țintă: < 94 cm (H: 172 cm)</small>
+                    </div>
+                    <div class="stat">
+                        <h3>WHtR</h3>
+                        <p id="stat-whtr">--</p>
+                        <small>Țintă: < 0.5 (Talie/Înălțime)</small>
+                    </div>
+                    <div class="stat">
+                        <h3>WHR</h3>
+                        <p id="stat-whr">--</p>
+                        <small>Țintă: < 0.90 (Talie/Șold)</small>
+                    </div>
+                    <div class="stat">
+                        <h3>Șold</h3>
+                        <p id="stat-hips">-- cm</p>
+                        <small>Țintă: 98-102 cm</small>
+                    </div>
                 </div>
             </div>
             <div class="card">
@@ -83,6 +109,10 @@
             <div class="card" style="grid-column: 1 / -1;">
                 <h2>Progres Măsurători (cm)</h2>
                 <div class="chart-container"><canvas id="measurementsChart"></canvas></div>
+            </div>
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Progres IMC</h2>
+                <div class="chart-container"><canvas id="bmiChart"></canvas></div>
             </div>
         </div>
     </div>
@@ -131,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const entryModal = document.getElementById('entry-modal');
     const entryForm = document.getElementById('entry-form');
-    let weightChart, measurementsChart;
+    let weightChart, measurementsChart, bmiChart;
 
     // --- Event Listeners ---
     document.getElementById('add-entry-btn').addEventListener('click', () => {
@@ -255,6 +285,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (weightChart) weightChart.destroy();
         const weightCtx = document.getElementById('weightChart').getContext('2d');
+        
+        // Grafic Greutate
+        const ideal_bmi = 24.9;
+        const height_m = USER_CONFIG.HEIGHT_CM / 100;
+        const ideal_weight = (ideal_bmi * (height_m * height_m));
+        const min_target_weight = ideal_weight - 5;
+
         weightChart = new Chart(weightCtx, {
             type: 'line',
             data: {
@@ -270,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     {
                         label: 'Țintă minimă',
-                        data: data.map(d => ({x: d.date, y: 70})),  // Greutate țintă minimă
+                        data: data.map(d => ({x: d.date, y: min_target_weight})),
                         borderColor: '#34C759',
                         borderWidth: 1,
                         borderDash: [5, 5],
@@ -279,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     {
                         label: 'Țintă maximă',
-                        data: data.map(d => ({x: d.date, y: 85})),  // Greutate țintă maximă
+                        data: data.map(d => ({x: d.date, y: ideal_weight})),
                         borderColor: '#FF3B30',
                         borderWidth: 1,
                         borderDash: [5, 5],
@@ -333,6 +370,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 ]
             },
             options: chartOptions('cm')
+        });
+        
+        if (bmiChart) bmiChart.destroy();
+        const bmiCtx = document.getElementById('bmiChart').getContext('2d');
+        bmiChart = new Chart(bmiCtx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    { 
+                        label: 'IMC', 
+                        data: data.map(d => ({x: d.date, y: d.weight_kg / ((USER_CONFIG.HEIGHT_CM / 100) * (USER_CONFIG.HEIGHT_CM / 100))})).filter(d => d.y), 
+                        borderColor: primaryOrange, 
+                        backgroundColor: 'rgba(255, 122, 0, 0.1)', 
+                        tension: 0.2, 
+                        pointRadius: 4, 
+                        fill: true 
+                    },
+                    {
+                        label: 'IMC Normal Maxim',
+                        data: data.map(d => ({x: d.date, y: 24.9})),
+                        borderColor: '#FF3B30',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'IMC Normal Minim',
+                        data: data.map(d => ({x: d.date, y: 18.5})),
+                        borderColor: '#34C759',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: chartOptions('IMC')
         });
     }
 
