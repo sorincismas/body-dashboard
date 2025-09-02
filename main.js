@@ -1,38 +1,53 @@
-// main.js
+// main.js - Orchestratorul principal al aplicației
 
-// Importă serviciile Firebase și modulele locale
+// --- Importuri ---
+// Importăm serviciile Firebase configurate în fișierul separat
 import { db } from './firebase-config.js';
+// Importăm funcțiile specializate din module
 import { calculateAllMetrics } from './modules/calculations.js';
-import { showToast } from './modules/ui.js';
+import { updateDashboardUI, renderAllCharts, showToast } from './modules/ui.js';
 
 // --- CONFIGURARE PERSONALĂ ---
 const USER_CONFIG = {
     BIRTH_DATE: new Date('1985-09-08'),
     HEIGHT_CM: 172,
-    ACTIVITY_FACTOR: 1.55 
+    ACTIVITY_FACTOR: 1.55 // 1.2=sedentar, 1.55=moderat activ, 1.725=foarte activ
 };
 
 // --- Referințe DOM & Variabile Globale ---
 const entryModal = document.getElementById('entry-modal');
 const entryForm = document.getElementById('entry-form');
-let weightChart, measurementsChart, bmiChart;
 
 // --- Inițializare Evenimente ---
+// Așteptăm ca tot conținutul paginii să fie încărcat înainte de a rula scriptul
 document.addEventListener('DOMContentLoaded', () => {
+    // Logica pentru deschiderea ferestrei de adăugare
     document.getElementById('add-entry-btn').addEventListener('click', () => {
         entryForm.reset();
         document.getElementById('date').valueAsDate = new Date();
         entryModal.classList.add('active');
     });
+
+    // Logica pentru închiderea ferestrei la click în exterior
     entryModal.addEventListener('click', (e) => {
-        if (e.target === entryModal) entryModal.classList.remove('active');
+        if (e.target === entryModal) {
+            entryModal.classList.remove('active');
+        }
     });
+
+    // Logica pentru trimiterea formularului
     entryForm.addEventListener('submit', handleFormSubmit);
     
+    // Încărcăm datele inițiale la pornirea aplicației
     loadAllData();
 });
 
-// --- Logică Date ---
+// --- Logică Date (Comunicarea cu Baza de Date) ---
+
+/**
+ * Prelucrează datele din formular și le salvează în Firestore.
+ * @param {Event} e Evenimentul de submit al formularului.
+ */
 async function handleFormSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -46,8 +61,14 @@ async function handleFormSubmit(e) {
         kcal_burnt: parseInt(formData.get('kcal')) || null
     };
 
-    // Elimină câmpurile goale
-    Object.keys(entry).forEach(key => (entry[key] == null || isNaN(entry[key])) && delete entry[key]);
+    // Elimină câmpurile goale pentru a nu le salva în baza de date
+    Object.keys(entry).forEach(key => {
+        if (entry[key] === null || isNaN(entry[key])) {
+            delete entry[key];
+        }
+    });
+    
+    // Data este singurul câmp obligatoriu
     if (!entry.date) {
         showToast("Data este obligatorie!", true);
         return;
@@ -57,58 +78,41 @@ async function handleFormSubmit(e) {
         await db.collection('checkins').add(entry);
         entryModal.classList.remove('active');
         showToast('Date salvate cu succes!');
-        loadAllData();
+        loadAllData(); // Reîncarcă toate datele pentru a reflecta noua intrare
     } catch (error) {
         showToast('Eroare la salvare: ' + error.message, true);
     }
 }
 
+/**
+ * Încarcă toate înregistrările din Firestore și pornește actualizarea interfeței.
+ */
 async function loadAllData() {
     try {
         const snapshot = await db.collection('checkins').orderBy('date').get();
-        const data = snapshot.docs.map(doc => doc.data());
+        const rawData = snapshot.docs.map(doc => doc.data());
         
-        const metrics = calculateAllMetrics(data, USER_CONFIG);
+        // Pre-procesăm datele, calculând toți indicii derivați (IMC, WHR etc.)
+        const processedData = rawData.map(d => {
+            const height_m = USER_CONFIG.HEIGHT_CM / 100;
+            const weight = d.weight_kg;
+            const waist = d.waist_cm;
+            const hips = d.hips_cm;
+            return {
+                ...d,
+                bmi: weight ? (weight / (height_m * height_m)) : null,
+                whtr: waist ? (waist / USER_CONFIG.HEIGHT_CM) : null,
+                whr: waist && hips ? (waist / hips) : null
+            };
+        });
         
-        updateDashboardUI(metrics);
-        renderAllCharts(data);
+        const latestMetrics = calculateAllMetrics(processedData, USER_CONFIG);
+        
+        updateDashboardUI(latestMetrics);
+        renderAllCharts(processedData, USER_CONFIG);
+
     } catch(error) {
         console.error("Eroare la încărcarea datelor:", error);
         showToast("Nu am putut încărca datele.", true);
     }
-}
-
-// --- Logică UI (Actualizare și Desenare) ---
-function updateDashboardUI(metrics) {
-    if (!metrics) return;
-    document.getElementById('stat-weight').textContent = `${metrics.weight_kg || '--'} kg`;
-    document.getElementById('stat-bmi').textContent = metrics.bmi || '--';
-    document.getElementById('stat-waist').textContent = `${metrics.waist_cm || '--'} cm`;
-    document.getElementById('stat-whtr').textContent = metrics.whtr || '--';
-    document.getElementById('stat-whr').textContent = metrics.whr || '--';
-    document.getElementById('stat-hips').textContent = `${metrics.hips_cm || '--'} cm`;
-    document.getElementById('stat-bmr').textContent = `${metrics.bmr || '--'} kcal`;
-    document.getElementById('stat-tdee').textContent = `${metrics.tdee || '--'} kcal`;
-    document.getElementById('target-weight').textContent = `${metrics.ideal_weight_low}-${metrics.ideal_weight_high} kg`;
-}
-
-function renderAllCharts(data) {
-    const chartOptions = (annotations) => ({
-        responsive: true, maintainAspectRatio: false,
-        scales: {
-            x: { type: 'time', time: { unit: 'week', displayFormats: { week: 'dd MMM' } }, ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } },
-            y: { beginAtZero: false, ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } }
-        },
-        plugins: { legend: { labels: { color: 'var(--text-secondary)', usePointStyle: true, pointStyle: 'circle' } }, annotation: { annotations } }
-    });
-
-    if (weightChart) weightChart.destroy();
-    const weightCtx = document.getElementById('weightChart').getContext('2d');
-    weightChart = new Chart(weightCtx, {
-        type: 'line', data: { datasets: [{ label: 'Greutate', data: data.map(d => ({x: d.date, y: d.weight_kg})).filter(d=>d.y), borderColor: 'var(--primary-orange)', backgroundColor: 'rgba(255, 122, 0, 0.1)', tension: 0.2, pointRadius: 4, fill: true }] },
-        options: chartOptions({ box1: { type: 'box', yMin: 18.5 * Math.pow(USER_CONFIG.HEIGHT_CM / 100, 2), yMax: 24.9 * Math.pow(USER_CONFIG.HEIGHT_CM / 100, 2), backgroundColor: 'rgba(52, 199, 89, 0.1)', borderColor: 'rgba(52, 199, 89, 0.3)' } })
-    });
-    
-    // ... restul graficelor (IMC, Măsurători) ...
-    // ... (copiază logica de creare a graficelor IMC și Măsurători din versiunea anterioară)
 }
