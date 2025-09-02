@@ -4,18 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Body Dashboard - Sorin</title>
+    <!-- Librării JavaScript: Firebase, Chart.js, Adaptor de date și Plugin-ul de Adnotări (NOU!) -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-orange: #FF7A00;
-            --primary-orange-dark: #E66F00;
             --secondary-green: #34C759;
+            --danger-red: #FF3B30;
             --light-bg: #F9FAFB;
             --card-bg: #FFFFFF;
             --text-primary: #1F2937;
@@ -25,23 +28,18 @@
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
-        body {
-            margin: 0;
-            font-family: var(--font-family);
-            background-color: var(--light-bg);
-            color: var(--text-primary);
-        }
+        body { margin: 0; font-family: var(--font-family); background-color: var(--light-bg); color: var(--text-primary); }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         header { margin-bottom: 24px; }
         header h1 { font-size: 32px; font-weight: 700; margin: 0; }
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .card { background-color: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card { background-color: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 4px_12px rgba(0,0,0,0.05); }
         .card h2 { font-size: 20px; margin: 0 0 20px 0; font-weight: 600; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; }
         .stat h3 { margin: 0; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
         .stat p { margin: 4px 0 8px; font-size: 28px; font-weight: 600; background: linear-gradient(45deg, var(--primary-orange), #FFB800); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .stat small { color: var(--text-secondary); font-size: 12px; }
-        .chart-container { margin-top: 16px; }
+        .chart-container { margin-top: 16px; height: 300px; } /* Înălțime fixă pentru consistență */
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(45deg, var(--primary-orange), #FFA500); color: white; border-radius: 50%; border: none; font-size: 36px; line-height: 60px; text-align: center; box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4); cursor: pointer; z-index: 1000; transition: transform 0.2s; }
         .fab:hover { transform: scale(1.1); }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: flex-end; z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
@@ -63,36 +61,12 @@
             <div class="card">
                 <h2>Metrici Cheie</h2>
                 <div class="stats-grid">
-                    <div class="stat">
-                        <h3>Greutate</h3>
-                        <p id="stat-weight">-- kg</p>
-                        <small>Țintă: <span id="target-weight">--</span></small>
-                    </div>
-                    <div class="stat">
-                        <h3>IMC</h3>
-                        <p id="stat-bmi">--</p>
-                        <small>Țintă: 18.5-24.9</small>
-                    </div>
-                    <div class="stat">
-                        <h3>Talie</h3>
-                        <p id="stat-waist">-- cm</p>
-                        <small>Țintă: < 94 cm (H: 172 cm)</small>
-                    </div>
-                    <div class="stat">
-                        <h3>WHtR</h3>
-                        <p id="stat-whtr">--</p>
-                        <small>Țintă: < 0.5 (Talie/Înălțime)</small>
-                    </div>
-                    <div class="stat">
-                        <h3>WHR</h3>
-                        <p id="stat-whr">--</p>
-                        <small>Țintă: < 0.90 (Talie/Șold)</small>
-                    </div>
-                    <div class="stat">
-                        <h3>Șold</h3>
-                        <p id="stat-hips">-- cm</p>
-                        <small>Țintă: 98-102 cm</small>
-                    </div>
+                    <div class="stat"><h3>Greutate</h3><p id="stat-weight">-- kg</p><small>Țintă: <span id="target-weight">--</span></small></div>
+                    <div class="stat"><h3>IMC</h3><p id="stat-bmi">--</p><small>Țintă: 18.5-24.9</small></div>
+                    <div class="stat"><h3>Talie</h3><p id="stat-waist">-- cm</p><small>Țintă: < 94 cm</small></div>
+                    <div class="stat"><h3>WHtR</h3><p id="stat-whtr">--</p><small>Țintă: < 0.5</small></div>
+                    <div class="stat"><h3>WHR</h3><p id="stat-whr">--</p><small>Țintă: < 0.90</small></div>
+                    <div class="stat"><h3>Șold</h3><p id="stat-hips">-- cm</p><small>Țintă: 98-102 cm</small></div>
                 </div>
             </div>
             <div class="card">
@@ -107,18 +81,17 @@
                 <div class="chart-container"><canvas id="weightChart"></canvas></div>
             </div>
             <div class="card" style="grid-column: 1 / -1;">
-                <h2>Progres Măsurători (cm)</h2>
-                <div class="chart-container"><canvas id="measurementsChart"></canvas></div>
-            </div>
-            <div class="card" style="grid-column: 1 / -1;">
                 <h2>Progres IMC</h2>
                 <div class="chart-container"><canvas id="bmiChart"></canvas></div>
+            </div>
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Progres Măsurători (cm)</h2>
+                <div class="chart-container"><canvas id="measurementsChart"></canvas></div>
             </div>
         </div>
     </div>
     
     <button class="fab" id="add-entry-btn">+</button>
-
     <div class="modal-overlay" id="entry-modal">
         <div class="modal-content">
             <h2>Înregistrare Nouă</h2>
@@ -142,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const USER_CONFIG = {
         BIRTH_DATE: new Date('1985-09-08'),
         HEIGHT_CM: 172,
-        ACTIVITY_FACTOR: 1.55 // 1.2=sedentar, 1.55=moderat activ
+        ACTIVITY_FACTOR: 1.55 
     };
 
     // --- CONFIGURARE FIREBASE ---
@@ -152,8 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         projectId: "body-dashboard-sorin",
         storageBucket: "body-dashboard-sorin.firebasestorage.app",
         messagingSenderId: "895437811384",
-        appId: "1:895437811384:web:6f735fd10b35bf448fce4d",
-        measurementId: "G-JYGMGKFQB8"
+        appId: "1:895437811384:web:6f735fd10b35bf448fce4d"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -163,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const entryForm = document.getElementById('entry-form');
     let weightChart, measurementsChart, bmiChart;
 
-    // --- Event Listeners ---
     document.getElementById('add-entry-btn').addEventListener('click', () => {
         entryForm.reset();
         document.getElementById('date').valueAsDate = new Date();
@@ -174,18 +145,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     entryForm.addEventListener('submit', handleFormSubmit);
 
-    // --- Logică Salvare Date ---
     async function handleFormSubmit(e) {
         e.preventDefault();
-        const entry = {
-            date: document.getElementById('date').value,
-            weight_kg: parseFloat(document.getElementById('weight').value) || null,
-            shoulders_cm: parseFloat(document.getElementById('shoulders').value) || null,
-            chest_cm: parseFloat(document.getElementById('chest').value) || null,
-            waist_cm: parseFloat(document.getElementById('waist').value) || null,
-            hips_cm: parseFloat(document.getElementById('hips').value) || null,
-            kcal_burnt: parseInt(document.getElementById('kcal').value) || null,
+        const entry = {};
+        const fields = ['date', 'weight_kg', 'shoulders_cm', 'chest_cm', 'waist_cm', 'hips_cm', 'kcal_burnt'];
+        const formElements = e.target.elements;
+        // Transformă id-urile din form în cheile corecte pentru DB
+        const idMap = {
+            'weight': 'weight_kg', 'shoulders': 'shoulders_cm', 'chest': 'chest_cm',
+            'waist': 'waist_cm', 'hips': 'hips_cm', 'kcal': 'kcal_burnt', 'date': 'date'
         };
+        for (const element of formElements) {
+            if (element.id && idMap[element.id]) {
+                const key = idMap[element.id];
+                const value = (element.type === 'number') ? parseFloat(element.value) : element.value;
+                if (!isNaN(value) && value !== '') entry[key] = value;
+            }
+        }
         try {
             await db.collection('checkins').add(entry);
             entryModal.classList.remove('active');
@@ -199,16 +175,26 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadAllData() {
         try {
             const snapshot = await db.collection('checkins').orderBy('date').get();
-            const data = snapshot.docs.map(doc => doc.data());
-            updateDashboard(data);
-            renderCharts(data);
+            const rawData = snapshot.docs.map(doc => doc.data());
+            // Pre-procesare date și calculare metrici derivate
+            const processedData = rawData.map(d => {
+                const height_m = USER_CONFIG.HEIGHT_CM / 100;
+                const weight = d.weight_kg;
+                const waist = d.waist_cm;
+                const hips = d.hips_cm;
+                const bmi = weight ? (weight / (height_m * height_m)) : null;
+                const whtr = waist ? (waist / USER_CONFIG.HEIGHT_CM) : null;
+                const whr = waist && hips ? (waist / hips) : null;
+                return { ...d, bmi, whtr, whr };
+            });
+            updateDashboard(processedData);
+            renderCharts(processedData);
         } catch(error) {
             console.error("Eroare la încărcarea datelor:", error);
             showToast("Nu am putut încărca datele.", true);
         }
     }
 
-    // --- Logică Dashboard & Calcule ---
     function updateDashboard(data) {
         if (data.length === 0) return;
         const lastEntry = data[data.length - 1];
@@ -217,202 +203,68 @@ document.addEventListener('DOMContentLoaded', () => {
         const height_m = USER_CONFIG.HEIGHT_CM / 100;
         const weight_kg = lastEntry.weight_kg || 82;
 
-        const bmi = (weight_kg / (height_m * height_m)).toFixed(1);
         const ideal_weight_low = (18.5 * (height_m * height_m)).toFixed(1);
         const ideal_weight_high = (24.9 * (height_m * height_m)).toFixed(1);
         const bmr = Math.round(10 * weight_kg + 6.25 * USER_CONFIG.HEIGHT_CM - 5 * age + 5);
         const tdee = Math.round(bmr * USER_CONFIG.ACTIVITY_FACTOR);
 
         document.getElementById('stat-weight').textContent = `${lastEntry.weight_kg || '--'} kg`;
-        document.getElementById('stat-bmi').textContent = bmi;
+        document.getElementById('stat-bmi').textContent = lastEntry.bmi ? lastEntry.bmi.toFixed(1) : '--';
         document.getElementById('stat-waist').textContent = `${lastEntry.waist_cm || '--'} cm`;
-        document.getElementById('stat-kcal').textContent = lastEntry.kcal_burnt || '--';
+        document.getElementById('stat-whtr').textContent = lastEntry.whtr ? lastEntry.whtr.toFixed(2) : '--';
+        document.getElementById('stat-whr').textContent = lastEntry.whr ? lastEntry.whr.toFixed(2) : '--';
+        document.getElementById('stat-hips').textContent = `${lastEntry.hips_cm || '--'} cm`;
         document.getElementById('stat-bmr').textContent = `${bmr} kcal`;
         document.getElementById('stat-tdee').textContent = `${tdee} kcal`;
         document.getElementById('target-weight').textContent = `${ideal_weight_low}-${ideal_weight_high} kg`;
-        document.getElementById('target-tdee').textContent = `${tdee} kcal`;
     }
 
-    // --- Logică Grafice ---
     function renderCharts(data) {
-        const style = getComputedStyle(document.documentElement);
-        const textSecondary = style.getPropertyValue('--text-secondary');
-        const borderColor = style.getPropertyValue('--border-color');
-        const primaryOrange = style.getPropertyValue('--primary-orange');
-
-        const chartOptions = (yLabel, targetLines = []) => ({
-            responsive: true, 
-            maintainAspectRatio: false,
+        const chartOptions = (annotations) => ({
+            responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { 
-                    type: 'time', 
-                    time: { 
-                        unit: 'week', 
-                        displayFormats: { 
-                            week: 'dd MMM' 
-                        } 
-                    }, 
-                    ticks: { 
-                        color: textSecondary 
-                    }, 
-                    grid: { 
-                        color: borderColor 
-                    } 
-                },
-                y: { 
-                    beginAtZero: false, 
-                    ticks: { 
-                        color: textSecondary 
-                    }, 
-                    grid: { 
-                        color: borderColor 
-                    } 
-                }
+                x: { type: 'time', time: { unit: 'week', displayFormats: { week: 'dd MMM' } }, ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } },
+                y: { beginAtZero: false, ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } }
             },
-            plugins: { 
-                legend: { 
-                    labels: { 
-                        color: textSecondary,
-                        usePointStyle: true,    // Folosește puncte în loc de dreptunghiuri
-                        pointStyle: 'circle'     // Specifică stilul punct
-                    } 
-                },
-                annotation: {
-                    annotations: targetLines
-                }
-            }
+            plugins: { legend: { labels: { color: 'var(--text-secondary)', usePointStyle: true, pointStyle: 'circle' } }, annotation: { annotations } }
         });
-        
+
         if (weightChart) weightChart.destroy();
         const weightCtx = document.getElementById('weightChart').getContext('2d');
-        
-        // Grafic Greutate
-        const ideal_bmi = 24.9;
-        const height_m = USER_CONFIG.HEIGHT_CM / 100;
-        const ideal_weight = (ideal_bmi * (height_m * height_m));
-        const min_target_weight = ideal_weight - 5;
-
         weightChart = new Chart(weightCtx, {
-            type: 'line',
-            data: {
-                datasets: [
-                    { 
-                        label: 'Greutate', 
-                        data: data.map(d => ({x: d.date, y: d.weight_kg})).filter(d => d.y), 
-                        borderColor: primaryOrange, 
-                        backgroundColor: 'rgba(255, 122, 0, 0.1)', 
-                        tension: 0.2, 
-                        pointRadius: 4, 
-                        fill: true 
-                    },
-                    {
-                        label: 'Țintă minimă',
-                        data: data.map(d => ({x: d.date, y: min_target_weight})),
-                        borderColor: '#34C759',
-                        borderWidth: 1,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
-                    },
-                    {
-                        label: 'Țintă maximă',
-                        data: data.map(d => ({x: d.date, y: ideal_weight})),
-                        borderColor: '#FF3B30',
-                        borderWidth: 1,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
-                    }
-                ]
-            },
-            options: chartOptions('kg')
-        });
-        
-        if (measurementsChart) measurementsChart.destroy();
-        const measureCtx = document.getElementById('measurementsChart').getContext('2d');
-        measurementsChart = new Chart(measureCtx, {
-            type: 'line',
-            data: {
-                datasets: [
-                    { 
-                        label: 'Talie', 
-                        data: data.map(d => ({x: d.date, y: d.waist_cm})).filter(d => d.y), 
-                        borderColor: '#FF9500',
-                        pointStyle: 'circle',
-                        tension: 0.2,
-                        pointRadius: 4
-                    },
-                    { 
-                        label: 'Bust', 
-                        data: data.map(d => ({x: d.date, y: d.chest_cm})).filter(d => d.y), 
-                        borderColor: '#FF2D55',
-                        pointStyle: 'circle',
-                        tension: 0.2,
-                        pointRadius: 4
-                    },
-                    { 
-                        label: 'Șold', 
-                        data: data.map(d => ({x: d.date, y: d.hips_cm})).filter(d => d.y), 
-                        borderColor: '#AF52DE',
-                        pointStyle: 'circle',
-                        tension: 0.2,
-                        pointRadius: 4
-                    },
-                    {
-                        label: 'Țintă talie',
-                        data: data.map(d => ({x: d.date, y: 94})),  // Țintă talie
-                        borderColor: '#34C759',
-                        borderWidth: 1,
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
-                    }
-                ]
-            },
-            options: chartOptions('cm')
+            type: 'line', data: { datasets: [{ label: 'Greutate', data: data.map(d => ({x: d.date, y: d.weight_kg})), borderColor: 'var(--primary-orange)', backgroundColor: 'rgba(255, 122, 0, 0.1)', tension: 0.2, pointRadius: 4, fill: true }] },
+            options: chartOptions({
+                box1: { type: 'box', yMin: 18.5 * Math.pow(USER_CONFIG.HEIGHT_CM / 100, 2), yMax: 24.9 * Math.pow(USER_CONFIG.HEIGHT_CM / 100, 2), backgroundColor: 'rgba(52, 199, 89, 0.1)', borderColor: 'rgba(52, 199, 89, 0.3)' }
+            })
         });
         
         if (bmiChart) bmiChart.destroy();
         const bmiCtx = document.getElementById('bmiChart').getContext('2d');
         bmiChart = new Chart(bmiCtx, {
-            type: 'line',
-            data: {
-                datasets: [
-                    { 
-                        label: 'IMC', 
-                        data: data.map(d => ({x: d.date, y: d.weight_kg / ((USER_CONFIG.HEIGHT_CM / 100) * (USER_CONFIG.HEIGHT_CM / 100))})).filter(d => d.y), 
-                        borderColor: primaryOrange, 
-                        backgroundColor: 'rgba(255, 122, 0, 0.1)', 
-                        tension: 0.2, 
-                        pointRadius: 4, 
-                        fill: true 
-                    },
-                    {
-                        label: 'IMC Normal Maxim',
-                        data: data.map(d => ({x: d.date, y: 24.9})),
-                        borderColor: '#FF3B30',
-                        borderWidth: 1,
-                        borderDash: [5, 5],
-                        pointRadius: 0
-                    },
-                    {
-                        label: 'IMC Normal Minim',
-                        data: data.map(d => ({x: d.date, y: 18.5})),
-                        borderColor: '#34C759',
-                        borderWidth: 1,
-                        borderDash: [5, 5],
-                        pointRadius: 0
-                    }
-                ]
-            },
-            options: chartOptions('IMC')
+            type: 'line', data: { datasets: [{ label: 'IMC', data: data.map(d => ({x: d.date, y: d.bmi})), borderColor: 'var(--primary-orange)', backgroundColor: 'rgba(255, 122, 0, 0.1)', tension: 0.2, pointRadius: 4, fill: true }] },
+            options: chartOptions({
+                box1: { type: 'box', yMin: 18.5, yMax: 24.9, backgroundColor: 'rgba(52, 199, 89, 0.1)', borderColor: 'rgba(52, 199, 89, 0.3)' }
+            })
+        });
+
+        if (measurementsChart) measurementsChart.destroy();
+        const measureCtx = document.getElementById('measurementsChart').getContext('2d');
+        measurementsChart = new Chart(measureCtx, {
+            type: 'line', data: { datasets: [
+                { label: 'Talie', data: data.map(d => ({x: d.date, y: d.waist_cm})), borderColor: '#FF9500' },
+                { label: 'Bust', data: data.map(d => ({x: d.date, y: d.chest_cm})), borderColor: '#FF2D55' },
+                { label: 'Șold', data: data.map(d => ({x: d.date, y: d.hips_cm})), borderColor: '#AF52DE' }
+            ]},
+            options: chartOptions({
+                line1: { type: 'line', yMin: 94, yMax: 94, borderColor: 'rgba(255, 59, 48, 0.5)', borderDash: [6, 6], borderWidth: 2, label: { content: 'Talie Risc', display: true, position: 'start' } }
+            })
         });
     }
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast-notification');
         toast.textContent = message;
-        toast.style.backgroundColor = isError ? '#FF3B30' : 'var(--secondary-green)';
+        toast.style.backgroundColor = isError ? 'var(--danger-red)' : 'var(--secondary-green)';
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3000);
     }
