@@ -2,9 +2,8 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Body Dashboard - Sorin</title>
-    <!-- Librării: Firebase & Chart.js -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,64 +13,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #007AFF;
-            --secondary: #34C759;
-            --dark-bg: #000000;
-            --card-bg: #1C1C1E;
-            --text-primary: #FFFFFF;
-            --text-secondary: #8E8E93;
-            --border-color: #3A3A3C;
+            --primary-orange: #FF7A00;
+            --primary-orange-dark: #E66F00;
+            --secondary-green: #34C759;
+            --light-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
             --font-family: 'Inter', sans-serif;
         }
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
         body {
             margin: 0;
             font-family: var(--font-family);
-            background-color: var(--dark-bg);
+            background-color: var(--light-bg);
             color: var(--text-primary);
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         header { margin-bottom: 24px; }
         header h1 { font-size: 32px; font-weight: 700; margin: 0; }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-        .card { background-color: var(--card-bg); border-radius: 18px; padding: 20px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .card { background-color: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .card h2 { font-size: 20px; margin: 0 0 20px 0; font-weight: 600; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; }
         .stat h3 { margin: 0; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
-        .stat p { margin: 4px 0 0; font-size: 28px; font-weight: 600; color: var(--primary); }
+        .stat p { margin: 4px 0 8px; font-size: 28px; font-weight: 600; background: linear-gradient(45deg, var(--primary-orange), #FFB800); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat small { color: var(--text-secondary); font-size: 12px; }
         .chart-container { margin-top: 16px; }
-        
-        /* Buton Plutitor (FAB) */
-        .fab {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background-color: var(--primary);
-            color: white;
-            border-radius: 50%;
-            border: none;
-            font-size: 36px;
-            line-height: 60px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
-            cursor: pointer;
-            z-index: 1000;
-        }
-        
-        /* Modal Form */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1001; }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--card-bg); padding: 24px; border-radius: 18px; width: 90%; max-width: 400px; }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(45deg, var(--primary-orange), #FFA500); color: white; border-radius: 50%; border: none; font-size: 36px; line-height: 60px; text-align: center; box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4); cursor: pointer; z-index: 1000; transition: transform 0.2s; }
+        .fab:hover { transform: scale(1.1); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: flex-end; z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: var(--card-bg); padding: 24px; border-radius: 24px 24px 0 0; width: 100%; max-width: 500px; transform: translateY(100%); transition: transform 0.3s ease-out; }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
         .modal-content h2 { margin-top: 0; }
         .modal-form { display: flex; flex-direction: column; gap: 16px; }
-        .modal-form input { background-color: #2C2C2E; border: 1px solid var(--border-color); color: var(--text-primary); padding: 14px; border-radius: 10px; font-size: 16px; }
-        .modal-form button { background-color: var(--primary); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 600; border-radius: 10px; cursor: pointer; }
-        
-        /* Toast Notification */
-        .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--secondary); color: white; padding: 16px 24px; border-radius: 10px; z-index: 1002; transition: bottom 0.5s ease; font-weight: 500; }
+        .modal-form input { background-color: var(--light-bg); border: 1px solid var(--border-color); color: var(--text-primary); padding: 14px; border-radius: 12px; font-size: 16px; }
+        .modal-form button { background: linear-gradient(45deg, var(--primary-orange), #FFA500); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 600; border-radius: 12px; cursor: pointer; }
+        .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--secondary-green); color: white; padding: 16px 24px; border-radius: 12px; z-index: 1002; transition: bottom 0.5s ease; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .toast.show { bottom: 30px; }
     </style>
 </head>
@@ -80,24 +61,23 @@
         <header><h1>Dashboard Corporal</h1></header>
         <div class="dashboard-grid">
             <div class="card">
-                <h2>Metrici Cheie (Ultima Înregistrare)</h2>
+                <h2>Metrici Cheie</h2>
                 <div class="stats-grid">
-                    <div class="stat"><h3>Greutate</h3><p id="stat-weight">-- kg</p></div>
-                    <div class="stat"><h3>IMC</h3><p id="stat-bmi">--</p></div>
-                    <div class="stat"><h3>Talie</h3><p id="stat-waist">-- cm</p></div>
-                    <div class="stat"><h3>Calorii</h3><p id="stat-kcal">--</p></div>
+                    <div class="stat"><h3>Greutate</h3><p id="stat-weight">-- kg</p><small>Țintă: <span id="target-weight">--</span></small></div>
+                    <div class="stat"><h3>IMC</h3><p id="stat-bmi">--</p><small>Țintă: 18.5-24.9</small></div>
+                    <div class="stat"><h3>Talie</h3><p id="stat-waist">-- cm</p><small>Țintă: < 94 cm</small></div>
+                    <div class="stat"><h3>Calorii Arse</h3><p id="stat-kcal">--</p><small>Țintă TDEE: <span id="target-tdee">--</span></small></div>
                 </div>
             </div>
             <div class="card">
-                <h2>Estimări Zilnice</h2>
+                <h2>Estimări Metabolice</h2>
                 <div class="stats-grid">
-                    <div class="stat"><h3>BMR</h3><p id="stat-bmr">-- kcal</p></div>
-                    <div class="stat"><h3>TDEE</h3><p id="stat-tdee">-- kcal</p></div>
-                    <div class="stat"><h3>Greutate Ideală</h3><p id="stat-ideal-weight">-- kg</p></div>
+                    <div class="stat"><h3>BMR</h3><p id="stat-bmr">-- kcal</p><small>Energie în repaus</small></div>
+                    <div class="stat"><h3>TDEE</h3><p id="stat-tdee">-- kcal</p><small>Mentenanță calorică</small></div>
                 </div>
             </div>
             <div class="card" style="grid-column: 1 / -1;">
-                <h2>Progres Greutate</h2>
+                <h2>Progres Greutate (kg)</h2>
                 <div class="chart-container"><canvas id="weightChart"></canvas></div>
             </div>
             <div class="card" style="grid-column: 1 / -1;">
@@ -124,22 +104,18 @@
             </form>
         </div>
     </div>
-
-    <div class="toast" id="toast-notification">Date salvate cu succes!</div>
+    <div class="toast" id="toast-notification"></div>
 
 <script>
+document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURARE PERSONALĂ ---
     const USER_CONFIG = {
-        // ATENȚIE: Am corectat anul nașterii. Dacă te-ai născut în '85, la 8 Septembrie 2024 vei împlini 39.
-        // Pentru a împlini 40 de ani, anul nașterii ar fi 1984. Am pus 1984.
         BIRTH_DATE: new Date('1985-09-08'),
         HEIGHT_CM: 172,
-        GENDER: 'male',
-        ACTIVITY_FACTOR: 1.55 // 1.2=sedentar, 1.375=ușor activ, 1.55=moderat activ, 1.725=foarte activ
+        ACTIVITY_FACTOR: 1.55 // 1.2=sedentar, 1.55=moderat activ
     };
 
     // --- CONFIGURARE FIREBASE ---
-    // !!! ÎNLOCUIEȘTE ACEST OBIECT CU CEL DIN CONSOLA TA FIREBASE !!!
     const firebaseConfig = {
         apiKey: "AIzaSyDa2r9t3kWGUpoiuqRaaKvYpWlJ_V8-yMI",
         authDomain: "body-dashboard-sorin.firebaseapp.com",
@@ -150,13 +126,14 @@
         measurementId: "G-JYGMGKFQB8"
     };
 
-    // Inițializare Firebase & Firestore
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Referințe DOM
     const entryModal = document.getElementById('entry-modal');
     const entryForm = document.getElementById('entry-form');
+    let weightChart, measurementsChart;
+
+    // --- Event Listeners ---
     document.getElementById('add-entry-btn').addEventListener('click', () => {
         entryForm.reset();
         document.getElementById('date').valueAsDate = new Date();
@@ -165,11 +142,10 @@
     entryModal.addEventListener('click', (e) => {
         if (e.target === entryModal) entryModal.classList.remove('active');
     });
-
-    let weightChart, measurementsChart;
+    entryForm.addEventListener('submit', handleFormSubmit);
 
     // --- Logică Salvare Date ---
-    entryForm.addEventListener('submit', async (e) => {
+    async function handleFormSubmit(e) {
         e.preventDefault();
         const entry = {
             date: document.getElementById('date').value,
@@ -186,40 +162,45 @@
             showToast('Date salvate cu succes!');
             loadAllData();
         } catch (error) {
-            alert('Eroare la salvare: ' + error.message);
+            showToast('Eroare la salvare: ' + error.message, true);
         }
-    });
+    }
 
     async function loadAllData() {
-        const snapshot = await db.collection('checkins').orderBy('date').get();
-        const data = snapshot.docs.map(doc => doc.data());
-        updateDashboard(data);
-        renderCharts(data);
+        try {
+            const snapshot = await db.collection('checkins').orderBy('date').get();
+            const data = snapshot.docs.map(doc => doc.data());
+            updateDashboard(data);
+            renderCharts(data);
+        } catch(error) {
+            console.error("Eroare la încărcarea datelor:", error);
+            showToast("Nu am putut încărca datele.", true);
+        }
     }
 
     // --- Logică Dashboard & Calcule ---
     function updateDashboard(data) {
         if (data.length === 0) return;
         const lastEntry = data[data.length - 1];
-
+        
+        const age = (new Date() - USER_CONFIG.BIRTH_DATE) / (1000 * 60 * 60 * 24 * 365.25);
         const height_m = USER_CONFIG.HEIGHT_CM / 100;
-        const weight_kg = lastEntry.weight_kg || 82; // Folosește ultima greutate sau default
-        const age = new Date().getFullYear() - USER_CONFIG.BIRTH_DATE.getFullYear();
+        const weight_kg = lastEntry.weight_kg || 82;
 
-        // Calcule
         const bmi = (weight_kg / (height_m * height_m)).toFixed(1);
-        const ideal_weight = (50 + 0.9 * (USER_CONFIG.HEIGHT_CM - 152)).toFixed(1);
+        const ideal_weight_low = (18.5 * (height_m * height_m)).toFixed(1);
+        const ideal_weight_high = (24.9 * (height_m * height_m)).toFixed(1);
         const bmr = Math.round(10 * weight_kg + 6.25 * USER_CONFIG.HEIGHT_CM - 5 * age + 5);
         const tdee = Math.round(bmr * USER_CONFIG.ACTIVITY_FACTOR);
 
-        // Afișare
         document.getElementById('stat-weight').textContent = `${lastEntry.weight_kg || '--'} kg`;
         document.getElementById('stat-bmi').textContent = bmi;
         document.getElementById('stat-waist').textContent = `${lastEntry.waist_cm || '--'} cm`;
         document.getElementById('stat-kcal').textContent = lastEntry.kcal_burnt || '--';
         document.getElementById('stat-bmr').textContent = `${bmr} kcal`;
         document.getElementById('stat-tdee').textContent = `${tdee} kcal`;
-        document.getElementById('stat-ideal-weight').textContent = `${ideal_weight} kg`;
+        document.getElementById('target-weight').textContent = `${ideal_weight_low}-${ideal_weight_high} kg`;
+        document.getElementById('target-tdee').textContent = `${tdee} kcal`;
     }
 
     // --- Logică Grafice ---
@@ -227,52 +208,47 @@
         const chartOptions = (yLabel) => ({
             responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { type: 'time', time: { unit: 'day' }, ticks: { color: var(--text-secondary) }, grid: { color: var(--border-color) } },
-                y: { beginAtZero: false, ticks: { color: var(--text-secondary) }, grid: { color: var(--border-color) }, title: { display: true, text: yLabel, color: var(--text-secondary) } }
+                x: { type: 'time', time: { unit: 'week', displayFormats: { week: 'dd MMM' } }, ticks: { color: var(--text-secondary) }, grid: { color: var(--border-color) } },
+                y: { beginAtZero: false, ticks: { color: var(--text-secondary) }, grid: { color: var(--border-color) } }
             },
             plugins: { legend: { labels: { color: var(--text-secondary) } } }
         });
         
-        // Grafic Greutate
         if (weightChart) weightChart.destroy();
         const weightCtx = document.getElementById('weightChart').getContext('2d');
         weightChart = new Chart(weightCtx, {
             type: 'line',
             data: {
-                datasets: [
-                    { label: 'Greutate (kg)', data: data.map(d => ({x: new Date(d.date), y: d.weight_kg})).filter(d => d.y), borderColor: var(--primary), tension: 0.1, pointRadius: 4 },
-                ]
+                datasets: [{ label: 'Greutate', data: data.map(d => ({x: d.date, y: d.weight_kg})).filter(d => d.y), borderColor: var(--primary-orange), backgroundColor: 'rgba(255, 122, 0, 0.1)', tension: 0.2, pointRadius: 4, fill: true }]
             },
             options: chartOptions('kg')
         });
         
-        // Grafic Măsurători
         if (measurementsChart) measurementsChart.destroy();
         const measureCtx = document.getElementById('measurementsChart').getContext('2d');
         measurementsChart = new Chart(measureCtx, {
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Talie (cm)', data: data.map(d => ({x: new Date(d.date), y: d.waist_cm})).filter(d => d.y), borderColor: '#FF9500', tension: 0.1 },
-                    { label: 'Bust (cm)', data: data.map(d => ({x: new Date(d.date), y: d.chest_cm})).filter(d => d.y), borderColor: '#FF2D55', tension: 0.1 },
-                    { label: 'Șold (cm)', data: data.map(d => ({x: new Date(d.date), y: d.hips_cm})).filter(d => d.y), borderColor: '#AF52DE', tension: 0.1 }
+                    { label: 'Talie', data: data.map(d => ({x: d.date, y: d.waist_cm})).filter(d => d.y), borderColor: '#FF9500' },
+                    { label: 'Bust', data: data.map(d => ({x: d.date, y: d.chest_cm})).filter(d => d.y), borderColor: '#FF2D55' },
+                    { label: 'Șold', data: data.map(d => ({x: d.date, y: d.hips_cm})).filter(d => d.y), borderColor: '#AF52DE' }
                 ]
             },
             options: chartOptions('cm')
         });
     }
 
-    function showToast(message) {
+    function showToast(message, isError = false) {
         const toast = document.getElementById('toast-notification');
         toast.textContent = message;
+        toast.style.backgroundColor = isError ? '#FF3B30' : 'var(--secondary-green)';
         toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
+        setTimeout(() => toast.classList.remove('show'), 3000);
     }
-
-    // Inițializare
-    document.addEventListener('DOMContentLoaded', loadAllData);
+    
+    loadAllData();
+});
 </script>
 </body>
 </html>
