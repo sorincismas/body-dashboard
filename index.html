@@ -205,13 +205,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Logică Grafice ---
     function renderCharts(data) {
+        // Obținem culorile din CSS
+        const style = getComputedStyle(document.documentElement);
+        const textSecondary = style.getPropertyValue('--text-secondary');
+        const borderColor = style.getPropertyValue('--border-color');
+        const primaryOrange = style.getPropertyValue('--primary-orange');
+
         const chartOptions = (yLabel) => ({
-            responsive: true, maintainAspectRatio: false,
+            responsive: true, 
+            maintainAspectRatio: false,
             scales: {
-                x: { type: 'time', time: { unit: 'week', displayFormats: { week: 'dd MMM' } }, ticks: { color: var(--text-secondary) }, grid: { color: var(--border-color) } },
-                y: { beginAtZero: false, ticks: { color: var(--text-secondary) }, grid: { color: var(--border-color) } }
+                x: { 
+                    type: 'time', 
+                    time: { 
+                        unit: 'week', 
+                        displayFormats: { 
+                            week: 'dd MMM' 
+                        } 
+                    }, 
+                    ticks: { 
+                        color: textSecondary 
+                    }, 
+                    grid: { 
+                        color: borderColor 
+                    } 
+                },
+                y: { 
+                    beginAtZero: false, 
+                    ticks: { 
+                        color: textSecondary 
+                    }, 
+                    grid: { 
+                        color: borderColor 
+                    } 
+                }
             },
-            plugins: { legend: { labels: { color: var(--text-secondary) } } }
+            plugins: { 
+                legend: { 
+                    labels: { 
+                        color: textSecondary 
+                    } 
+                } 
+            }
         });
         
         if (weightChart) weightChart.destroy();
@@ -219,7 +254,15 @@ document.addEventListener('DOMContentLoaded', () => {
         weightChart = new Chart(weightCtx, {
             type: 'line',
             data: {
-                datasets: [{ label: 'Greutate', data: data.map(d => ({x: d.date, y: d.weight_kg})).filter(d => d.y), borderColor: var(--primary-orange), backgroundColor: 'rgba(255, 122, 0, 0.1)', tension: 0.2, pointRadius: 4, fill: true }]
+                datasets: [{ 
+                    label: 'Greutate', 
+                    data: data.map(d => ({x: d.date, y: d.weight_kg})).filter(d => d.y), 
+                    borderColor: primaryOrange, 
+                    backgroundColor: 'rgba(255, 122, 0, 0.1)', 
+                    tension: 0.2, 
+                    pointRadius: 4, 
+                    fill: true 
+                }]
             },
             options: chartOptions('kg')
         });
