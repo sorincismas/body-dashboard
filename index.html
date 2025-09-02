@@ -242,44 +242,151 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCharts(data) {
+        // Calculăm data de început pentru ultima lună
+        const now = new Date();
+        const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+
         const chartOptions = (annotations) => ({
-            responsive: true, maintainAspectRatio: false,
+            responsive: true, 
+            maintainAspectRatio: false,
             scales: {
-                x: { type: 'time', time: { unit: 'week', displayFormats: { week: 'dd MMM' } }, ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } },
-                y: { beginAtZero: false, ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } }
+                x: { 
+                    type: 'time', 
+                    time: { 
+                        unit: 'day',
+                        displayFormats: { 
+                            day: 'dd MMM' 
+                        }
+                    }, 
+                    ticks: { 
+                        color: 'var(--text-secondary)' 
+                    }, 
+                    grid: { 
+                        color: 'var(--border-color)' 
+                    },
+                    // Setăm zoom-ul implicit pe ultima lună
+                    min: oneMonthAgo,
+                    max: now
+                },
+                y: { 
+                    beginAtZero: false, 
+                    ticks: { 
+                        color: 'var(--text-secondary)' 
+                    }, 
+                    grid: { 
+                        color: 'var(--border-color)' 
+                    } 
+                }
             },
-            plugins: { legend: { labels: { color: 'var(--text-secondary)', usePointStyle: true, pointStyle: 'circle' } }, annotation: { annotations } }
+            plugins: { 
+                legend: { 
+                    labels: { 
+                        color: 'var(--text-secondary)', 
+                        usePointStyle: true, 
+                        pointStyle: 'circle' 
+                    } 
+                }, 
+                annotation: { annotations },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x'
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'x'
+                    }
+                }
+            }
         });
 
         if (weightChart) weightChart.destroy();
         const weightCtx = document.getElementById('weightChart').getContext('2d');
         weightChart = new Chart(weightCtx, {
-            type: 'line', data: { datasets: [{ label: 'Greutate', data: data.map(d => ({x: d.date, y: d.weight_kg})), borderColor: 'var(--primary-orange)', backgroundColor: 'rgba(255, 122, 0, 0.1)', tension: 0.2, pointRadius: 4, fill: true }] },
+            type: 'line', 
+            data: { 
+                datasets: [{ 
+                    label: 'Greutate', 
+                    data: data.map(d => ({x: d.date, y: d.weight_kg})), 
+                    borderColor: 'var(--primary-orange)', 
+                    backgroundColor: 'rgba(255, 122, 0, 0.1)', 
+                    tension: 0.2, 
+                    pointRadius: 4, 
+                    fill: true 
+                }] 
+            },
             options: chartOptions({
-                box1: { type: 'box', yMin: 18.5 * Math.pow(USER_CONFIG.HEIGHT_CM / 100, 2), yMax: 24.9 * Math.pow(USER_CONFIG.HEIGHT_CM / 100, 2), backgroundColor: 'rgba(52, 199, 89, 0.1)', borderColor: 'rgba(52, 199, 89, 0.3)' }
+                box1: { 
+                    type: 'box', 
+                    yMin: 18.5 * Math.pow(USER_CONFIG.HEIGHT_CM / 100, 2), 
+                    yMax: 24.9 * Math.pow(USER_CONFIG.HEIGHT_CM / 100, 2), 
+                    backgroundColor: 'rgba(52, 199, 89, 0.1)', 
+                    borderColor: 'rgba(52, 199, 89, 0.3)' 
+                }
             })
         });
         
         if (bmiChart) bmiChart.destroy();
         const bmiCtx = document.getElementById('bmiChart').getContext('2d');
         bmiChart = new Chart(bmiCtx, {
-            type: 'line', data: { datasets: [{ label: 'IMC', data: data.map(d => ({x: d.date, y: d.bmi})), borderColor: 'var(--primary-orange)', backgroundColor: 'rgba(255, 122, 0, 0.1)', tension: 0.2, pointRadius: 4, fill: true }] },
+            type: 'line', 
+            data: { 
+                datasets: [{ 
+                    label: 'IMC', 
+                    data: data.map(d => ({x: d.date, y: d.bmi})), 
+                    borderColor: 'var(--primary-orange)', 
+                    backgroundColor: 'rgba(255, 122, 0, 0.1)', 
+                    tension: 0.2, 
+                    pointRadius: 4, 
+                    fill: true 
+                }] 
+            },
             options: chartOptions({
-                box1: { type: 'box', yMin: 18.5, yMax: 24.9, backgroundColor: 'rgba(52, 199, 89, 0.1)', borderColor: 'rgba(52, 199, 89, 0.3)' }
+                box1: { 
+                    type: 'box', 
+                    yMin: 18.5, 
+                    yMax: 24.9, 
+                    backgroundColor: 'rgba(52, 199, 89, 0.1)', 
+                    borderColor: 'rgba(52, 199, 89, 0.3)' 
+                }
             })
         });
 
         if (measurementsChart) measurementsChart.destroy();
         const measureCtx = document.getElementById('measurementsChart').getContext('2d');
         measurementsChart = new Chart(measureCtx, {
-            type: 'line', data: { datasets: [
-                { label: 'Talie', data: data.map(d => ({x: d.date, y: d.waist_cm})), borderColor: '#FF9500' },
-                { label: 'Bust', data: data.map(d => ({x: d.date, y: d.chest_cm})), borderColor: '#FF2D55' },
-                { label: 'Șold', data: data.map(d => ({x: d.date, y: d.hips_cm})), borderColor: '#AF52DE' }
-            ]},
-            options: chartOptions({
-                line1: { type: 'line', yMin: 94, yMax: 94, borderColor: 'rgba(255, 59, 48, 0.5)', borderDash: [6, 6], borderWidth: 2, label: { content: 'Talie Risc', display: true, position: 'start' } }
-            })
+            type: 'line', 
+            data: { 
+                datasets: [
+                    { 
+                        label: 'Talie', 
+                        data: data.map(d => ({x: d.date, y: d.waist_cm})), 
+                        borderColor: '#FF9500',
+                        tension: 0.2,
+                        pointRadius: 4
+                    },
+                    { 
+                        label: 'Bust', 
+                        data: data.map(d => ({x: d.date, y: d.chest_cm})), 
+                        borderColor: '#FF2D55',
+                        tension: 0.2,
+                        pointRadius: 4
+                    },
+                    { 
+                        label: 'Șold', 
+                        data: data.map(d => ({x: d.date, y: d.hips_cm})), 
+                        borderColor: '#AF52DE',
+                        tension: 0.2,
+                        pointRadius: 4
+                    }
+                ]
+            },
+            options: chartOptions({})  // Am eliminat linia de risc
         });
     }
 
